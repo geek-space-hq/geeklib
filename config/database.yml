@@ -1,0 +1,15 @@
+sqlite: &postgres
+  host: 127.0.0.1
+  adapter: postgresql
+
+production:
+  <<: *postgres
+  database: geeklib_production
+
+development:
+  <<: *postgres
+  database: geeklib_development
+
+test:
+  <<: *postgres
+  database: geeklib_test
