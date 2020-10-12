@@ -26,15 +26,18 @@ RSpec.describe '/users/' do
 
   describe 'post: /users/' do
     uri = URI.parse(host + '/users/')
+    let(:request) { Net::HTTP::Post.new(uri) }
 
     it 'registers the new user' do
-      Net::HTTP.post_form(uri, { 'name' => 'Hirota' })
+      request.set_form_data({ 'name' => 'Hirota' })
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
 
       expect(Model::User.find_by(name: 'Hirota')).not_to be_nil
     end
 
     it 'returns the new user information as JSON' do
-      response = Net::HTTP.post_form(uri, { 'name' => 'Hirota' })
+      request.set_form_data({ 'name' => 'Hirota' })
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
       user_information = JSON.parse(response.body)
 
       expect(user_information['id']).not_to be_nil
@@ -42,7 +45,7 @@ RSpec.describe '/users/' do
     end
 
     it 'returns "The name is nil" with 406 if the name is nil' do
-      response = Net::HTTP.post_form(uri, {})
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
       body = JSON.parse(response.body)
 
       expect(response.code).to eq '406'
