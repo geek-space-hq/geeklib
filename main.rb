@@ -18,3 +18,11 @@ post '/users/' do
 
   { id: user.id, name: user.name }.to_json
 end
+
+get '/users/:user_id' do
+  user = Model::User.find_by(id: params['user_id'])
+
+  return [404, { cause: 'The user was not found' }.to_json] if user.nil?
+
+  { id: user.id, name: user.name }.to_json
+end

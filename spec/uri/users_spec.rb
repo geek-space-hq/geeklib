@@ -49,4 +49,27 @@ RSpec.describe '/users/' do
       expect(body['cause']).to eq 'The name is nil'
     end
   end
+
+  describe 'get: /users/{user.id}' do
+    it 'returns the user information as json' do
+      post_response = Net::HTTP.post_form(URI.parse(host + '/users/'), { 'name' => 'Hirota' })
+      user_information = JSON.parse(post_response.body)
+      user_id = user_information['id']
+
+      uri = URI.parse(host + '/users/' + user_id)
+      request = Net::HTTP::Get.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(JSON.parse(response.body)).to eq user_information
+    end
+
+    it 'returns "The user was not found" with 404 if the user is not exist' do
+      uri = URI.parse(host + '/users/' + 'None')
+      request = Net::HTTP::Get.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+  end
 end
