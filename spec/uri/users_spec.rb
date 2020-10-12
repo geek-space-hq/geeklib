@@ -72,4 +72,47 @@ RSpec.describe '/users/' do
       expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
     end
   end
+
+  describe 'put: /users/{user.id}/name' do
+    let(:user) do
+      JSON.parse(
+        Net::HTTP.post_form(URI.parse(host + '/users/'), { 'name' => 'Irena' }).body
+      )
+    end
+
+    let(:uri) { URI.parse("#{host}/users/#{user['id']}/name") }
+    let(:request) { Net::HTTP::Put.new(uri.path) }
+
+    it 'updates the user name' do
+      request.set_form_data({ 'name' => 'Alice' })
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      expect(Model::User.find_by(id: user['id']).name).to eq 'Alice'
+    end
+
+    it 'returns the updated user information as JSON' do
+      request.set_form_data({ 'name' => 'Alice' })
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      updated_user_information = JSON.parse(response.body)
+      expected = { 'id' => user['id'], 'name' => 'Alice' }
+
+      expect(updated_user_information).to eq expected
+    end
+
+    it 'returns "The user was not found" with 404 if the user is not exist' do
+      request = Net::HTTP::Put.new(URI.parse("#{host}/users/undefined/name"))
+      request.set_form_data({ 'name' => 'Alice' })
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+
+    it 'returns "The name is nil" with 406 if the name is nil' do
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      body = JSON.parse(response.body)
+
+      expect(response.code).to eq '406'
+      expect(body['cause']).to eq 'The name is nil'
+    end
+  end
 end
