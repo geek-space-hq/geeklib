@@ -118,4 +118,35 @@ RSpec.describe '/users/' do
       expect(body['cause']).to eq 'The name is nil'
     end
   end
+
+  describe 'delete: /users/{user.id}' do
+    let(:user) do
+      JSON.parse(
+        Net::HTTP.post_form(URI.parse(host + '/users/'), { 'name' => 'Irena' }).body
+      )
+    end
+
+    let(:uri) { URI.parse("#{host}/users/#{user['id']}") }
+    let(:request) { Net::HTTP::Delete.new(uri.path) }
+
+    it 'deletes the user' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::User.find_by(id: user['id'])).to be_nil
+    end
+
+    it 'returns the user information as JSON' do
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(JSON.parse(response.body)).to eq user
+    end
+
+    it 'returns "The user was not found" with 404 if the user is not exist' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # delete
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # delete twice
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+  end
 end
