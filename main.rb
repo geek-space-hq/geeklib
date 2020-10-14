@@ -49,3 +49,17 @@ delete '/users/:user_id' do
 
   { id: user.id, name: user.name }.to_json
 end
+
+post '/books/' do
+  return [406, { cause: 'The title is nil' }.to_json] if params['title'].nil?
+
+  return [406, { cause: 'The author is nil' }.to_json] if params['author'].nil?
+
+  book = Model::Book.create(
+    id: SecureRandom.uuid,
+    title: params['title'],
+    author: params['author']
+  )
+
+  { id: book.id, title: book.title, author: book.author }.to_json
+end
