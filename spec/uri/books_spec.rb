@@ -87,4 +87,36 @@ RSpec.describe '/books' do
       expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
     end
   end
+
+  describe 'delete: /books/{book.id}' do
+    let(:book) do
+      uri = URI.parse(route + '/')
+      create_request = Net::HTTP::Post.new(uri)
+      create_request.set_form_data({ 'title' => 'SICP', 'author' => 'Harold Abelson' })
+      JSON.parse((Net::HTTP.start(uri.host, uri.port) { |http| http.request(create_request) }).body)
+    end
+
+    let(:uri) { URI.parse("#{route}/#{book['id']}") }
+    let(:request) { Net::HTTP::Delete.new(uri.path) }
+
+    it 'deletes the book' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::Book.find_by(id: book['id'])).to be_nil
+    end
+
+    it 'returns the book information as JSON' do
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(JSON.parse(response.body)).to eq book
+    end
+
+    it 'returns "The book was not found" with 404 if the user is not exist' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # delete
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # delete twice
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
+    end
+  end
 end

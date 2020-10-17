@@ -71,3 +71,13 @@ get '/books/:book_id' do
 
   { id: book.id, title: book.title, author: book.author }.to_json
 end
+
+delete '/books/:book_id' do
+  book = Model::Book.find_by(id: params['book_id'])
+
+  return [404, { cause: 'The book was not found' }.to_json] if book.nil?
+
+  book.delete
+
+  { id: book.id, title: book.title, author: book.author }.to_json
+end
