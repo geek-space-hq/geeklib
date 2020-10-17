@@ -61,4 +61,30 @@ RSpec.describe '/books' do
       expect(body['cause']).to eq 'The author is nil'
     end
   end
+
+  describe 'get: /books/{book.id}' do
+    let(:book) do
+      uri = URI.parse(route + '/')
+      create_request = Net::HTTP::Post.new(uri)
+      create_request.set_form_data({ 'title' => 'Land of Lisp', 'author' => 'Conrad Barski' })
+      JSON.parse((Net::HTTP.start(uri.host, uri.port) { |http| http.request(create_request) }).body)
+    end
+
+    it 'returns the book information as json' do
+      uri = URI.parse(route + '/' + book['id'])
+      request = Net::HTTP::Get.new(uri)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      body = JSON.parse(response.body)
+      expect(body).to eq book
+    end
+
+    it 'returns "The book was not found" with 404 if the user is not exist' do
+      uri = URI.parse(route + '/' + '...')
+      request = Net::HTTP::Get.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
+    end
+  end
 end
