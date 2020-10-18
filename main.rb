@@ -18,7 +18,7 @@ post '/users/' do
     name: params['name']
   )
 
-  { id: user.id, name: user.name }.to_json
+  user.to_json
 end
 
 get '/users/:user_id' do
@@ -26,7 +26,7 @@ get '/users/:user_id' do
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
 
-  { id: user.id, name: user.name }.to_json
+  user.to_json
 end
 
 put '/users/:user_id/name' do
@@ -39,7 +39,7 @@ put '/users/:user_id/name' do
   user.name = params['name']
   user.save
 
-  { id: user.id, name: user.name }.to_json
+  user.to_json
 end
 
 delete '/users/:user_id' do
@@ -49,7 +49,7 @@ delete '/users/:user_id' do
 
   user.delete
 
-  { id: user.id, name: user.name }.to_json
+  user.to_json
 end
 
 post '/users/:user_id/borrow/:book_id' do
@@ -67,18 +67,7 @@ post '/users/:user_id/borrow/:book_id' do
   book.status = 'borrowed'
   book.save
 
-  {
-    user: {
-      id: user.id,
-      name: user.name
-    },
-    book: {
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      status: book.status
-    }
-  }.to_json
+  { user: user.attributes, book: book.attributes }.to_json
 end
 
 post '/users/:user_id/return/:book_id' do
@@ -90,18 +79,7 @@ post '/users/:user_id/return/:book_id' do
 
   book.status = 'avaliable'
 
-  {
-    user: {
-      id: user.id,
-      name: user.name
-    },
-    book: {
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      status: book.status
-    }
-  }.to_json
+  { user: user.attributes, book: book.attributes }.to_json
 end
 
 post '/books/' do
