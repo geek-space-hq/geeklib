@@ -21,7 +21,7 @@ ActiveRecord::Schema.define(version: 2020_10_11_011139) do
     t.string "status", default: "available", null: false
   end
 
-  create_table "bowwored_logs", force: :cascade do |t|
+  create_table "borrowed_logs", force: :cascade do |t|
     t.string "book_id", null: false
     t.string "user_id", null: false
     t.datetime "created_at", precision: 6, null: false
