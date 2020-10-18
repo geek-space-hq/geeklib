@@ -8,6 +8,7 @@ require 'json'
 require 'active_record'
 require_relative '../../db/connection'
 require_relative '../../models/user'
+require_relative '../../models/borrowed_log'
 
 Connection.to_test
 
@@ -147,6 +148,57 @@ RSpec.describe '/users/' do
 
       expect(response.code).to eq '404'
       expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+  end
+
+  describe 'post: /users/{user.id}/borrow/{book.id}' do
+    let(:user) do
+      JSON.parse(
+        Net::HTTP.post_form(URI.parse(host + '/users/'), { 'name' => 'Irena' }).body
+      )
+    end
+
+    let(:book) do
+      uri = URI.parse(host + '/books/')
+      create_request = Net::HTTP::Post.new(uri)
+      create_request.set_form_data({ 'title' => 'SICP', 'author' => 'Harold Abelson' })
+      JSON.parse((Net::HTTP.start(uri.host, uri.port) { |http| http.request(create_request) }).body)
+    end
+
+    let(:uri) { URI.parse("#{host}/users/#{user['id']}/borrow/#{book['id']}") }
+    let(:request) { Net::HTTP::Post.new(uri.path) }
+
+    it 'creates the borrowed-log & update the book status' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::BorrowedLog.find_by(book_id: book['id'])).not_to be_nil
+      expect(Model::Book.find_by(id: book['id']).status).to eq 'borrowed'
+    end
+
+    it 'returns the borrowed-log as json' do
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      book['status'] = 'borrowed'
+      expected = { 'user' => user, 'book' => book }
+
+      expect(JSON.parse(response.body)).to eq expected
+    end
+
+    it 'returns "The user was not found" with 404 if the user is not exist' do
+      uri = URI.parse("#{host}/users/brabra/borrow/#{book['id']}")
+      request = Net::HTTP::Post.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+
+    it 'returns "The book was not found" with 404 if the book is not exist' do
+      uri = URI.parse("#{host}/users/#{user['id']}/borrow/hogehoge")
+      request = Net::HTTP::Post.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
     end
   end
 end
