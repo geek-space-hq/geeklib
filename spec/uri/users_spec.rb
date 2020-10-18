@@ -201,4 +201,54 @@ RSpec.describe '/users/' do
       expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
     end
   end
+
+  describe 'post: /users/{user.id}/return/{book.id}' do
+    let(:user) do
+      JSON.parse(
+        Net::HTTP.post_form(URI.parse(host + '/users/'), { 'name' => 'Irena' }).body
+      )
+    end
+
+    let(:book) do
+      uri = URI.parse(host + '/books/')
+      create_request = Net::HTTP::Post.new(uri)
+      create_request.set_form_data({ 'title' => 'SICP', 'author' => 'Harold Abelson' })
+      JSON.parse((Net::HTTP.start(uri.host, uri.port) { |http| http.request(create_request) }).body)
+    end
+
+    before :each do
+      uri = URI.parse("#{host}/users/#{user['id']}/borrow/#{book['id']}")
+      borrow_request = Net::HTTP::Post.new(uri)
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(borrow_request) }
+    end
+
+    let(:uri) { URI.parse("#{host}/users/#{user['id']}/return/#{book['id']}") }
+    let(:request) { Net::HTTP::Post.new(uri.path) }
+
+    it 'returns the borrowed-log information as json' do
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      book['status'] = 'avaliable'
+      expected = { 'user' => user, 'book' => book }
+
+      expect(JSON.parse(response.body)).to eq expected
+    end
+
+    it 'returns "The user was not found" with 404 if the user is not exist' do
+      uri = URI.parse("#{host}/users/brabra/return/#{book['id']}")
+      request = Net::HTTP::Post.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The user was not found'
+    end
+
+    it 'returns "The book was not found" with 404 if the book is not exist' do
+      uri = URI.parse("#{host}/users/#{user['id']}/return/hogehoge")
+      request = Net::HTTP::Post.new(uri.path)
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(response.code).to eq '404'
+      expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
+    end
+  end
 end

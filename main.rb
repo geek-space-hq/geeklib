@@ -81,6 +81,29 @@ post '/users/:user_id/borrow/:book_id' do
   }.to_json
 end
 
+post '/users/:user_id/return/:book_id' do
+  user = Model::User.find_by(id: params['user_id'])
+  book = Model::Book.find_by(id: params['book_id'])
+
+  return [404, { cause: 'The user was not found' }.to_json] if user.nil?
+  return [404, { cause: 'The book was not found' }.to_json] if book.nil?
+
+  book.status = 'avaliable'
+
+  {
+    user: {
+      id: user.id,
+      name: user.name
+    },
+    book: {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      status: book.status
+    }
+  }.to_json
+end
+
 post '/books/' do
   return [406, { cause: 'The title is nil' }.to_json] if params['title'].nil?
 
