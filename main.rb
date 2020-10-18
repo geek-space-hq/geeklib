@@ -58,6 +58,7 @@ post '/users/:user_id/borrow/:book_id' do
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
   return [404, { cause: 'The book was not found' }.to_json] if book.nil?
+  return [403, { cause: 'The book is not available' }.to_json] unless book.status == 'available'
 
   Model::BorrowedLog.create(
     user_id: user.id,
