@@ -258,5 +258,13 @@ RSpec.describe '/users/' do
       expect(response.code).to eq '404'
       expect(JSON.parse(response.body)['cause']).to eq 'The book was not found'
     end
+
+    it 'returns "The book is not borrowed" with 403 if the book is not available' do
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # Return the book
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) } # The book is available
+
+      expect(response.code).to eq '403'
+      expect(JSON.parse(response.body)['cause']).to eq 'The book is not borrowed'
+    end
   end
 end

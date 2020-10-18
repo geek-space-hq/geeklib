@@ -77,8 +77,10 @@ post '/users/:user_id/return/:book_id' do
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
   return [404, { cause: 'The book was not found' }.to_json] if book.nil?
+  return [403, { cause: 'The book is not borrowed' }.to_json] unless book.status == 'borrowed'
 
   book.status = 'avaliable'
+  book.save
 
   { user: user.attributes, book: book.attributes }.to_json
 end
