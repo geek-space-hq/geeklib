@@ -115,7 +115,7 @@ post '/books/' do
     author: params['author']
   )
 
-  { id: book.id, title: book.title, author: book.author }.to_json
+  book.attributes.to_json
 end
 
 get '/books/:book_id' do
@@ -123,7 +123,7 @@ get '/books/:book_id' do
 
   return [404, { cause: 'The book was not found' }.to_json] if book.nil?
 
-  { id: book.id, title: book.title, author: book.author }.to_json
+  book.attributes.to_json
 end
 
 delete '/books/:book_id' do
@@ -133,5 +133,5 @@ delete '/books/:book_id' do
 
   book.delete
 
-  { id: book.id, title: book.title, author: book.author }.to_json
+  book.attributes.to_json
 end

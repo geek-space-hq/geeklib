@@ -41,6 +41,7 @@ RSpec.describe '/books' do
 
       expect(book['title']).to eq 'Land of Lisp'
       expect(book['author']).to eq 'Conrad Barski'
+      expect(book['status']).to eq 'available'
     end
 
     it 'returns "The title is nil" with 406 if the title is nil' do
