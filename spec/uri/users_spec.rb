@@ -151,8 +151,6 @@ RSpec.describe '/users' do
       request.delete 'authorization'
       request.add_field 'authorization', 'xxx'
       response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
-      puts "<<<<<<<<<<<<<<<<#{request.get_fields 'authorization'}>>>>>>>>>>>>>>>>>"
-      p response.body
       expect(response.code).to eq '406'
       expect(JSON.parse(response.body)['cause']).to eq 'The authorization is invalid'
     end
@@ -239,11 +237,11 @@ RSpec.describe '/users' do
     end
 
     it 'returns the borrowed-log as json' do
-      # response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
-      # book['status'] = 'borrowed'
-      # expected = { 'user' => user, 'book' => book }
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      book['status'] = 'borrowed'
+      expected = { 'user' => user, 'book' => book }
 
-      # expect(JSON.parse(response.body)).to eq expected
+      expect(JSON.parse(response.body)).to eq expected
     end
 
     it 'returns "The user was not found" with 404 if the user is not exist' do
