@@ -7,6 +7,7 @@ require_relative './db/connection'
 require_relative './models/user'
 require_relative './models/book'
 require_relative './models/borrowed_log'
+require_relative './models/token'
 
 Connection.to_test
 
@@ -24,7 +25,12 @@ post '/users/' do
     digest_password: (1..30).inject(params['password']) { Digest::SHA256.new.hexdigest(_1 + salt) }
   )
 
-  { id: user.id, name: user.name }.to_json
+  token = Model::Token.create(
+    token: SecureRandom.uuid,
+    user_id: id
+  )
+
+  { token: token.token, user: { id: user.id, name: user.name } }.to_json
 end
 
 get '/users/:user_id' do

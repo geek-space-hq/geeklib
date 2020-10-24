@@ -9,6 +9,7 @@ require 'active_record'
 require_relative '../../db/connection'
 require_relative '../../models/user'
 require_relative '../../models/borrowed_log'
+require_relative '../../models/token'
 
 Connection.to_test
 
@@ -17,6 +18,7 @@ RSpec.describe '/users' do
     Model::User.delete_all
     Model::Book.delete_all
     Model::BorrowedLog.delete_all
+    Model::Token.delete_all
   end
 
   (Thread.fork do
@@ -36,17 +38,19 @@ RSpec.describe '/users' do
       request.set_form_data(data)
       Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
 
-      expect(Model::User.find_by(name: 'Hirota')).not_to be_nil
+      user = Model::User.find_by(name: 'Hirota')
+      expect(user).not_to be_nil
+      expect(Model::Token.find_by(user_id: user.id)).not_to be_nil
     end
 
-    it 'returns the new user information as JSON' do
+    it "returns the new user's token as JSON" do
       request.set_form_data(data)
       response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
-      user_information = JSON.parse(response.body)
+      token_information = JSON.parse(response.body)
 
-      expect(user_information['id']).not_to be_nil
-      expect(user_information['name']).to eq 'Hirota'
-      expect(user_information['digest_password']).to be_nil
+      expect(token_information['user']['id']).not_to be_nil
+      expect(token_information['user']['name']).to eq 'Hirota'
+      expect(token_information['user']['digest_password']).to be_nil
     end
 
     it 'returns "The name is nil" with 406 if the name is nil' do
@@ -72,7 +76,7 @@ RSpec.describe '/users' do
       response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
       user_information = JSON.parse(response.body)
 
-      expect(Model::User.find_by(id: user_information['id']).digest_password).not_to eq data['password']
+      expect(Model::User.find_by(id: user_information['user']['id']).digest_password).not_to eq data['password']
     end
   end
 
@@ -81,7 +85,7 @@ RSpec.describe '/users' do
 
     it 'returns the user information as json' do
       post_response = Net::HTTP.post_form(URI.parse(host + '/users/'), data)
-      user_information = JSON.parse(post_response.body)
+      user_information = JSON.parse(post_response.body)['user']
       user_id = user_information['id']
 
       uri = URI.parse(host + '/users/' + user_id)
@@ -104,11 +108,13 @@ RSpec.describe '/users' do
   describe 'put: /{user.id}/name' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
-    let(:user) do
+    let(:token) do
       JSON.parse(
         Net::HTTP.post_form(URI.parse(host + '/users/'), data).body
       )
     end
+
+    let(:user) { token['user'] }
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}/name") }
     let(:request) { Net::HTTP::Put.new(uri.path) }
@@ -149,11 +155,13 @@ RSpec.describe '/users' do
   describe 'delete: /{user.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
-    let(:user) do
+    let(:token) do
       JSON.parse(
         Net::HTTP.post_form(URI.parse(host + '/users/'), data).body
       )
     end
+
+    let(:user) { token['user'] }
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}") }
     let(:request) { Net::HTTP::Delete.new(uri.path) }
@@ -182,11 +190,13 @@ RSpec.describe '/users' do
   describe 'post: /{user.id}/borrow/{book.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
-    let(:user) do
+    let(:token) do
       JSON.parse(
         Net::HTTP.post_form(URI.parse(host + '/users/'), data).body
       )
     end
+
+    let(:user) { token['user'] }
 
     let(:book) do
       uri = URI.parse(host + '/books/')
@@ -243,11 +253,13 @@ RSpec.describe '/users' do
   describe 'post: /{user.id}/return/{book.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
-    let(:user) do
+    let(:token) do
       JSON.parse(
         Net::HTTP.post_form(URI.parse(host + '/users/'), data).body
       )
     end
+
+    let(:user) { token['user'] }
 
     let(:book) do
       uri = URI.parse(host + '/books/')
