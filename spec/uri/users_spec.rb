@@ -12,7 +12,7 @@ require_relative '../../models/borrowed_log'
 
 Connection.to_test
 
-RSpec.describe '/users/' do
+RSpec.describe '/users' do
   after :each do
     Model::User.delete_all
     Model::Book.delete_all
@@ -27,7 +27,7 @@ RSpec.describe '/users/' do
 
   host = 'http://localhost:4567'
 
-  describe 'post: /users/' do
+  describe 'post: /' do
     uri = URI.parse(host + '/users/')
     let(:request) { Net::HTTP::Post.new(uri) }
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
@@ -76,7 +76,7 @@ RSpec.describe '/users/' do
     end
   end
 
-  describe 'get: /users/{user.id}' do
+  describe 'get: /{user.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
     it 'returns the user information as json' do
@@ -101,7 +101,7 @@ RSpec.describe '/users/' do
     end
   end
 
-  describe 'put: /users/{user.id}/name' do
+  describe 'put: /{user.id}/name' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
     let(:user) do
@@ -146,7 +146,7 @@ RSpec.describe '/users/' do
     end
   end
 
-  describe 'delete: /users/{user.id}' do
+  describe 'delete: /{user.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
     let(:user) do
@@ -179,7 +179,7 @@ RSpec.describe '/users/' do
     end
   end
 
-  describe 'post: /users/{user.id}/borrow/{book.id}' do
+  describe 'post: /{user.id}/borrow/{book.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
     let(:user) do
@@ -240,7 +240,7 @@ RSpec.describe '/users/' do
     end
   end
 
-  describe 'post: /users/{user.id}/return/{book.id}' do
+  describe 'post: /{user.id}/return/{book.id}' do
     let(:data) { { 'name' => 'Hirota', 'password' => 'abcde' } }
 
     let(:user) do
