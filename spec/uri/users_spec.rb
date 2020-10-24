@@ -117,12 +117,24 @@ RSpec.describe '/users' do
     let(:user) { token['user'] }
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}/name") }
-    let(:request) { Net::HTTP::Put.new(uri.path) }
+    let(:request) do
+      request = Net::HTTP::Put.new(uri.path)
+      request.add_field 'authorization', token['token']
+      request
+    end
 
     it 'updates the user name' do
       request.set_form_data({ 'name' => 'Alice' })
+
       Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
       expect(Model::User.find_by(id: user['id']).name).to eq 'Alice'
+    end
+
+    it 'does not update the user name without the token' do
+      request.set_form_data({ 'name' => 'Alice' })
+      request.delete 'authorization'
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      expect(Model::User.find_by(id: user['id']).name).to eq 'Hirota'
     end
 
     it 'returns the updated user information as JSON' do
@@ -132,6 +144,17 @@ RSpec.describe '/users' do
       expected = { 'id' => user['id'], 'name' => 'Alice' }
 
       expect(updated_user_information).to eq expected
+    end
+
+    it 'returns "The authorization is invalid"' do
+      request.set_form_data({ 'name' => 'Alice' })
+      request.delete 'authorization'
+      request.add_field 'authorization', 'xxx'
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      puts "<<<<<<<<<<<<<<<<#{request.get_fields 'authorization'}>>>>>>>>>>>>>>>>>"
+      p response.body
+      expect(response.code).to eq '406'
+      expect(JSON.parse(response.body)['cause']).to eq 'The authorization is invalid'
     end
 
     it 'returns "The user was not found" with 404 if the user is not exist' do

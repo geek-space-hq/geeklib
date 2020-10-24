@@ -46,7 +46,13 @@ put '/users/:user_id/name' do
 
   user = Model::User.find_by(id: params['user_id'])
 
+  token = request.env['HTTP_AUTHORIZATION'] && Model::Token.find_by(token: request.env['HTTP_AUTHORIZATION'])
+
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
+
+  return [406, { cause: 'The authorization is invalid' }.to_json] if token.nil?
+
+  return '' if request.env['HTTP_AUTHORIZATION'].nil?
 
   user.name = params['name']
   user.save
