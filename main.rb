@@ -13,12 +13,18 @@ Connection.to_test
 post '/users/' do
   return [406, { cause: 'The name is nil' }.to_json] if params['name'].nil?
 
+  return [406, { cause: 'The password is nil' }.to_json] if params['password'].nil?
+
+  id = SecureRandom.uuid
+  salt = Digest::SHA256.new.hexdigest(id)
+
   user = Model::User.create(
-    id: SecureRandom.uuid,
-    name: params['name']
+    id: id,
+    name: params['name'],
+    digest_password: (1..30).inject(params['password']) { Digest::SHA256.new.hexdigest(_1 + salt) }
   )
 
-  user.to_json
+  { id: user.id, name: user.name }.to_json
 end
 
 get '/users/:user_id' do
@@ -26,7 +32,7 @@ get '/users/:user_id' do
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
 
-  user.to_json
+  { id: user.id, name: user.name }.to_json
 end
 
 put '/users/:user_id/name' do
@@ -39,7 +45,7 @@ put '/users/:user_id/name' do
   user.name = params['name']
   user.save
 
-  user.to_json
+  { id: user.id, name: user.name }.to_json
 end
 
 delete '/users/:user_id' do
@@ -49,7 +55,7 @@ delete '/users/:user_id' do
 
   user.delete
 
-  user.to_json
+  { id: user.id, name: user.name }.to_json
 end
 
 post '/users/:user_id/borrow/:book_id' do
@@ -68,7 +74,7 @@ post '/users/:user_id/borrow/:book_id' do
   book.status = 'borrowed'
   book.save
 
-  { user: user.attributes, book: book.attributes }.to_json
+  { user: { id: user.id, name: user.name }, book: book.attributes }.to_json
 end
 
 post '/users/:user_id/return/:book_id' do
@@ -82,7 +88,7 @@ post '/users/:user_id/return/:book_id' do
   book.status = 'avaliable'
   book.save
 
-  { user: user.attributes, book: book.attributes }.to_json
+  { user: { id: user.id, name: user.name }, book: book.attributes }.to_json
 end
 
 post '/books/' do
