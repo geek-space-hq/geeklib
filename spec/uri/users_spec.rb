@@ -246,13 +246,32 @@ RSpec.describe '/users' do
     end
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}/borrow/#{book['id']}") }
-    let(:request) { Net::HTTP::Post.new(uri.path) }
+    let(:request) do
+      request = Net::HTTP::Post.new(uri.path)
+      request.add_field 'authorization', token['token']
+      request
+    end
 
     it 'creates the borrowed-log & update the book status' do
       Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
 
       expect(Model::BorrowedLog.find_by(book_id: book['id'])).not_to be_nil
       expect(Model::Book.find_by(id: book['id']).status).to eq 'borrowed'
+    end
+
+    it 'does not borrow without the token' do
+      request.delete 'authorization'
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::BorrowedLog.find_by(book_id: book['id'])).to be_nil
+    end
+
+    it 'returns "The authorization is invalid"' do
+      request.delete 'authorization'
+      request.add_field 'authorization', 'xxx'
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      expect(response.code).to eq '406'
+      expect(JSON.parse(response.body)['cause']).to eq 'The authorization is invalid'
     end
 
     it 'returns the borrowed-log as json' do
@@ -311,11 +330,16 @@ RSpec.describe '/users' do
     before :each do
       uri = URI.parse("#{host}/users/#{user['id']}/borrow/#{book['id']}")
       borrow_request = Net::HTTP::Post.new(uri)
+      borrow_request.add_field 'authorization', token['token']
       Net::HTTP.start(uri.host, uri.port) { |http| http.request(borrow_request) }
     end
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}/return/#{book['id']}") }
-    let(:request) { Net::HTTP::Post.new(uri.path) }
+    let(:request) do
+      request = Net::HTTP::Post.new(uri.path)
+      request.add_field 'authorization', token['token']
+      request
+    end
 
     it 'returns the borrowed-log information as json' do
       response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
@@ -324,6 +348,22 @@ RSpec.describe '/users' do
 
       expect(JSON.parse(response.body)).to eq expected
     end
+
+    it 'does not return without the token' do
+      request.delete 'authorization'
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::Book.find_by(id: book['id']).status).to eq 'borrowed'
+    end
+
+    it 'returns "The authorization is invalid"' do
+      request.delete 'authorization'
+      request.add_field 'authorization', 'xxx'
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      expect(response.code).to eq '406'
+      expect(JSON.parse(response.body)['cause']).to eq 'The authorization is invalid'
+    end
+
 
     it 'returns "The user was not found" with 404 if the user is not exist' do
       uri = URI.parse("#{host}/users/brabra/return/#{book['id']}")

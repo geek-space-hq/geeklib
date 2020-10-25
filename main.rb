@@ -76,10 +76,12 @@ end
 post '/users/:user_id/borrow/:book_id' do
   user = Model::User.find_by(id: params['user_id'])
   book = Model::Book.find_by(id: params['book_id'])
+  token = request.env['HTTP_AUTHORIZATION'] && Model::Token.find_by(token: request.env['HTTP_AUTHORIZATION'])
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
   return [404, { cause: 'The book was not found' }.to_json] if book.nil?
   return [403, { cause: 'The book is not available' }.to_json] unless book.status == 'available'
+  return [406, { cause: 'The authorization is invalid' }.to_json] if token.nil?
 
   Model::BorrowedLog.create(
     user_id: user.id,
@@ -95,10 +97,12 @@ end
 post '/users/:user_id/return/:book_id' do
   user = Model::User.find_by(id: params['user_id'])
   book = Model::Book.find_by(id: params['book_id'])
+  token = request.env['HTTP_AUTHORIZATION'] && Model::Token.find_by(token: request.env['HTTP_AUTHORIZATION'])
 
   return [404, { cause: 'The user was not found' }.to_json] if user.nil?
   return [404, { cause: 'The book was not found' }.to_json] if book.nil?
   return [403, { cause: 'The book is not borrowed' }.to_json] unless book.status == 'borrowed'
+  return [406, { cause: 'The authorization is invalid' }.to_json] if token.nil?
 
   book.status = 'avaliable'
   book.save
