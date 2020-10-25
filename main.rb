@@ -33,6 +33,23 @@ post '/users/' do
   { token: token.token, user: { id: user.id, name: user.name } }.to_json
 end
 
+post '/tokens/' do
+  user = params['name'] && Model::User.find_by(name: params['name'])
+
+  return [404, { cause: 'The user was not found' }.to_json] if user.nil?
+
+  salt = Digest::SHA256.new.hexdigest user.id
+  digest_password = (1..30).inject(params['password']) { Digest::SHA256.new.hexdigest(_1 + salt) }
+  return [404, { cause: 'The password is invalid' }.to_json] unless user.digest_password == digest_password
+
+  token = Model::Token.create(
+    token: SecureRandom.uuid,
+    user_id: user.id
+  )
+
+  { token: token.token, user: { id: user.id, name: user.name } }.to_json
+end
+
 get '/users/:user_id' do
   user = Model::User.find_by(id: params['user_id'])
 
