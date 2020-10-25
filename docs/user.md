@@ -19,7 +19,7 @@ Post data:
 |-------|------|-------------|
 | name | string | 新しいユーザーの名前 |
 
-Return data: [User | Error]
+Return data: [Token | Error]
 
 ### Get: /users/:user.id
 ---
