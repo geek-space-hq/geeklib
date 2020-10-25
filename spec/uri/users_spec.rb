@@ -185,12 +185,31 @@ RSpec.describe '/users' do
     let(:user) { token['user'] }
 
     let(:uri) { URI.parse("#{host}/users/#{user['id']}") }
-    let(:request) { Net::HTTP::Delete.new(uri.path) }
+    let(:request) do
+      request = Net::HTTP::Delete.new(uri.path)
+      request.add_field 'authorization', token['token']
+      request
+    end
 
     it 'deletes the user' do
       Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
 
       expect(Model::User.find_by(id: user['id'])).to be_nil
+    end
+
+    it 'does not delete users without the token' do
+      request.delete 'authorization'
+      Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+
+      expect(Model::User.find_by(id: user['id'])).not_to be_nil
+    end
+
+    it 'returns "The authorization is invalid"' do
+      request.delete 'authorization'
+      request.add_field 'authorization', 'xxx'
+      response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }
+      expect(response.code).to eq '406'
+      expect(JSON.parse(response.body)['cause']).to eq 'The authorization is invalid'
     end
 
     it 'returns the user information as JSON' do
